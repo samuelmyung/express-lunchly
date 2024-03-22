@@ -13,13 +13,14 @@ const router = new express.Router();
 
 /** Homepage: show list of customers. */
 router.get("/", async function (req, res, next) {
+  let customers;
   if (!req.query.search) {
-    const customers = await Customer.all();
-    return res.render("customer_list.jinja", { customers }); //can declare customers outside and use 1 return statement
+    customers = await Customer.all();
   } else {
-    const customers = await Customer.search(req.query.search);
-    return res.render("customer_list.jinja", { customers });
+    customers = await Customer.search(req.query.search);
   }
+  return res.render("customer_list.jinja", { customers });
+
 });
 
 
@@ -87,9 +88,14 @@ router.post("/:id/edit/", async function (req, res, next) {
 
 /** Handle adding a new reservation. */
 router.post("/:id/add-reservation/", async function (req, res, next) {
-  if (req.body === undefined || isNaN(Date.parse(req.body.startAt))) { //TODO: consider separating guard statements
+  if (req.body === undefined) {
     throw new BadRequestError();
   }
+
+  if (isNaN(Date.parse(req.body.startAt))){
+    throw new BadRequestError("Invalid Date Format");
+  }
+
 
   const customerId = req.params.id;
   const startAt = new Date(req.body.startAt);

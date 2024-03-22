@@ -41,9 +41,9 @@ class Customer {
                   phone,
                   notes
           FROM customers
-          WHERE first_name ILIKE $1 OR last_name ILIKE $1
+          WHERE CONCAT(first_name, ' ', last_name) ILIKE $1
           ORDER BY last_name, first_name`,
-          [`%${query}%`]); //TODO: try to query by any substring, not just first and last
+          [`%${query}%`]);
     return results.rows.map(c => new Customer(c));
   }
 
@@ -63,6 +63,7 @@ class Customer {
       ORDER BY "reservationCount" DESC
       LIMIT 10`
     );
+    // {customer: Customer, numRes: n}
     return results.rows.map(c => new Customer({
       id: c.id,
       firstName: c.firstName,

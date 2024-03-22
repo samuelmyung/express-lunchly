@@ -40,10 +40,32 @@ class Reservation {
     return results.rows.map(row => new Reservation(row));
   }
 
+  static async getReservationById(id) {
+    const results = await db.query(
+      `SELECT id,
+              customer_id AS "customerId",
+              num_guests AS "numGuests",
+              start_at AS "startAt",
+              notes
+      FROM reservations
+      WHERE id = $1`, [id]
+    );
+
+    const reservation = results.rows[0];
+
+    if(!reservation) {
+      const err = new Error(`No reservation exits of: ${id}`);
+      err.status = 404;
+      throw err;
+    }
+
+    return new Reservation(reservation)
+  }
+
   async save() {
     if (this.id === undefined) {
       const result = await db.query(
-            `INSERT INTO reservations (customerId, numGuests, startAt, notes)
+            `INSERT INTO reservations (customer_id, num_guests, start_at, notes)
 
              VALUES ($1, $2, $3, $4)
              RETURNING id`,
@@ -52,10 +74,10 @@ class Reservation {
       this.id = result.rows[0].id;
     } else {
       await db.query(
-            `UPDATE customers
-             SET customerId=$1,
-                 numGuests=$2,
-                 startAt=$3,
+            `UPDATE reservations
+             SET customer_id=$1,
+                 num_guests=$2,
+                 start_at=$3,
                  notes=$4
              WHERE id = $5`, [
             this.customerId,

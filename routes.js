@@ -72,7 +72,7 @@ router.post("/:id/edit/", async function (req, res, next) {
 
 /** Handle adding a new reservation. */
 
-router.post("/:id/add-reservation/", async function (req, res, next) {
+router.post("/:id/add-reservation/:", async function (req, res, next) {
   if (req.body === undefined) {
     throw new BadRequestError();
   }
@@ -90,6 +90,26 @@ router.post("/:id/add-reservation/", async function (req, res, next) {
   await reservation.save();
 
   return res.redirect(`/${customerId}/`);
+});
+
+router.get("/:id/edit-reservation/:reservationId", async function(req, res, next) {
+  const reservation = await Reservation.getReservationById(req.params.reservationId);
+  reservation.startAt = new Date(reservation.startAt);
+  res.render("reservation_edit_form.jinja", { reservation });
+});
+
+router.post("/:id/edit-reservation/:reservationId", async function (req, res, next) {
+  if (req.body === undefined) {
+    throw new BadRequestError();
+  }
+  const reservation = await Reservation.getReservationById(req.params.reservationId)
+  reservation.customerId = req.params.id;
+  reservation.startAt = new Date(req.body.startAt);
+  reservation.numGuests = req.body.numGuests;
+  reservation.notes = req.body.notes;
+  await reservation.save()
+
+  return res.redirect(`/${req.params.id}/`);
 });
 
 module.exports = router;

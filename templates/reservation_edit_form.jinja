@@ -1,0 +1,42 @@
+{% extends 'base.jinja' %}
+
+{% block title %}Edit Reservation{% endblock %}
+
+{% block content %}
+
+
+
+<div class="col-6">
+    <h3>Edit Reservation</h3>
+    <form action="/{{ reservation.customerId }}/edit-reservation/{{ reservation.id }}" method="POST">
+    <div class="mb-3">
+        <label for="start">Start</label>
+        <input id="start"
+                class="form-control"
+                name="startAt"
+                value="{{reservation.startAt}}"
+
+        >
+    </div>
+    <div class="mb-3">
+        <label for="num-guests"># of Guests:</label>
+        <input class="form-control"
+                value="{{reservation.numGuests}}"
+                name="numGuests"
+                type="number"
+                id="num-guests">
+    </div>
+    <div class="mb-3">
+        <label for="notes">Notes:</label>
+        <textarea class="form-control"
+                name="notes"
+                id="notes">{{ reservation.notes }}</textarea>
+
+    </div>
+    <button class="btn btn-primary">Edit</button>
+    </form>
+</div>
+
+
+
+{% endblock %}

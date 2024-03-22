@@ -20,7 +20,7 @@ class Customer {
 
   static async all() {
     const results = await db.query(
-          `SELECT id,
+      `SELECT id,
                   first_name AS "firstName",
                   last_name  AS "lastName",
                   phone,
@@ -35,31 +35,55 @@ class Customer {
 
   static async search(query) {
     const results = await db.query(
-          `SELECT id,
+      `SELECT id,
                   first_name AS "firstName",
                   last_name  AS "lastName",
                   phone,
                   notes
           FROM customers
-          WHERE first_name ILIKE $1 || '%' OR last_name ILIKE $1 || '%'
+          WHERE first_name ILIKE $1 OR last_name ILIKE $1
           ORDER BY last_name, first_name`,
-          [query]);
+          [`%${query}%`]); //TODO: try to query by any substring, not just first and last
     return results.rows.map(c => new Customer(c));
   }
 
+  /** Query for the top ten customers by reservation count */
+  static async getBestCustomers() {
+    const results = await db.query(
+      `SELECT customers.id,
+              first_name AS "firstName",
+              last_name  AS "lastName",
+              phone,
+              customers.notes,
+              COUNT(reservations.id) AS "reservationCount"
+      FROM customers
+      JOIN reservations
+      ON reservations.customer_id = customers.id
+      GROUP BY customers.id
+      ORDER BY "reservationCount" DESC
+      LIMIT 10`
+    );
+    return results.rows.map(c => new Customer({
+      id: c.id,
+      firstName: c.firstName,
+      lastName: c.lastName,
+      phone: c.phone,
+      notes: c.notes
+    }));
+  }
 
   /** get a customer by ID. */
 
   static async get(id) {
     const results = await db.query(
-          `SELECT id,
+      `SELECT id,
                   first_name AS "firstName",
                   last_name  AS "lastName",
                   phone,
                   notes
            FROM customers
            WHERE id = $1`,
-        [id],
+      [id],
     );
 
     const customer = results.rows[0];
@@ -84,33 +108,34 @@ class Customer {
   async save() {
     if (this.id === undefined) {
       const result = await db.query(
-            `INSERT INTO customers (first_name, last_name, phone, notes)
+        `INSERT INTO customers (first_name, last_name, phone, notes)
              VALUES ($1, $2, $3, $4)
              RETURNING id`,
-          [this.firstName, this.lastName, this.phone, this.notes],
+        [this.firstName, this.lastName, this.phone, this.notes],
       );
       this.id = result.rows[0].id;
     } else {
       await db.query(
-            `UPDATE customers
+        `UPDATE customers
              SET first_name=$1,
                  last_name=$2,
                  phone=$3,
                  notes=$4
              WHERE id = $5`, [
-            this.firstName,
-            this.lastName,
-            this.phone,
-            this.notes,
-            this.id,
-          ],
+        this.firstName,
+        this.lastName,
+        this.phone,
+        this.notes,
+        this.id,
+      ],
       );
     }
   }
 
+  /** return the customer's full name */
   fullName() {
     return `${this.firstName} ${this.lastName}`;
-}
+  }
 
 
 

@@ -10,31 +10,38 @@ const Reservation = require("./models/reservation");
 
 const router = new express.Router();
 
-/** Homepage: show list of customers. */
 
+/** Homepage: show list of customers. */
 router.get("/", async function (req, res, next) {
-  if (!req.query.search){
+  if (!req.query.search) {
     const customers = await Customer.all();
-    return res.render("customer_list.jinja", { customers });
+    return res.render("customer_list.jinja", { customers }); //can declare customers outside and use 1 return statement
   } else {
     const customers = await Customer.search(req.query.search);
     return res.render("customer_list.jinja", { customers });
   }
-
 });
 
-/** Form to add a new customer. */
 
+/** Show a list of our top 10 customers by reservation */
+router.get("/top-ten", async function (req, res, next) {
+  const customers = await Customer.getBestCustomers();
+  return res.render("customer_list.jinja", { customers });
+});
+
+
+/** Form to add a new customer. */
 router.get("/add/", async function (req, res, next) {
   return res.render("customer_new_form.jinja");
 });
 
-/** Handle adding a new customer. */
 
+/** Handle adding a new customer. */
 router.post("/add/", async function (req, res, next) {
   if (req.body === undefined) {
     throw new BadRequestError();
   }
+
   const { firstName, lastName, phone, notes } = req.body;
   const customer = new Customer({ firstName, lastName, phone, notes });
   await customer.save();
@@ -42,8 +49,8 @@ router.post("/add/", async function (req, res, next) {
   return res.redirect(`/${customer.id}/`);
 });
 
-/** Show a customer, given their ID. */
 
+/** Show a customer, given their ID. */
 router.get("/:id/", async function (req, res, next) {
   const customer = await Customer.get(req.params.id);
 
@@ -52,16 +59,16 @@ router.get("/:id/", async function (req, res, next) {
   return res.render("customer_detail.jinja", { customer, reservations });
 });
 
-/** Show form to edit a customer. */
 
+/** Show form to edit a customer. */
 router.get("/:id/edit/", async function (req, res, next) {
   const customer = await Customer.get(req.params.id);
 
   res.render("customer_edit_form.jinja", { customer });
 });
 
-/** Handle editing a customer. */
 
+/** Handle editing a customer. */
 router.post("/:id/edit/", async function (req, res, next) {
   if (req.body === undefined) {
     throw new BadRequestError();
@@ -71,23 +78,24 @@ router.post("/:id/edit/", async function (req, res, next) {
   customer.lastName = req.body.lastName;
   customer.phone = req.body.phone;
   customer.notes = req.body.notes;
+
   await customer.save();
 
   return res.redirect(`/${customer.id}/`);
 });
 
-/** Handle adding a new reservation. */
 
+/** Handle adding a new reservation. */
 router.post("/:id/add-reservation/", async function (req, res, next) {
-  if (req.body === undefined || isNaN(Date.parse(req.body.startAt))) {
+  if (req.body === undefined || isNaN(Date.parse(req.body.startAt))) { //TODO: consider separating guard statements
     throw new BadRequestError();
   }
+
   const customerId = req.params.id;
   const startAt = new Date(req.body.startAt);
   const numGuests = req.body.numGuests;
   const notes = req.body.notes;
 
-  console.log("******************* =>", !isNaN(startAt));
 
   const reservation = new Reservation({
     customerId,
@@ -100,22 +108,30 @@ router.post("/:id/add-reservation/", async function (req, res, next) {
   return res.redirect(`/${customerId}/`);
 });
 
-router.get("/:id/edit-reservation/:reservationId", async function(req, res, next) {
+
+/** Renders page for reservation edit form */
+router.get("/:id/edit-reservation/:reservationId", async function (req, res, next) {
   const reservation = await Reservation.getReservationById(req.params.reservationId);
+
   reservation.startAt = new Date(reservation.startAt);
+
   res.render("reservation_edit_form.jinja", { reservation });
 });
 
+
+/** Handles edit a reservation  */
 router.post("/:id/edit-reservation/:reservationId", async function (req, res, next) {
   if (req.body === undefined) {
     throw new BadRequestError();
   }
-  const reservation = await Reservation.getReservationById(req.params.reservationId)
+
+  const reservation = await Reservation.getReservationById(req.params.reservationId);
   reservation.customerId = req.params.id;
   reservation.startAt = new Date(req.body.startAt);
   reservation.numGuests = req.body.numGuests;
   reservation.notes = req.body.notes;
-  await reservation.save()
+
+  await reservation.save();
 
   return res.redirect(`/${req.params.id}/`);
 });
